@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Timerapportering
 
-## Getting Started
+En lokal desktop-app for registrering og rapportering av arbeidstid, bygget med Tauri og Next.js.
 
-First, run the development server:
+## Funksjoner
+
+- **Klokk inn/ut** — start og stopp en økt med ett klikk
+- **Manuell registrering** — legg til tidligere timer via baklogg-skjema
+- **Månedsoversikt** — se alle registreringer gruppert per måned og uke
+- **Statistikk** — ukentlige søylediagram, ukedagssnitt og månedstrender
+- **Tillegg** — automatisk beregning av tillegg (kveld, natt, lørdag, søndag) basert på norske tariffavtaler
+- **Eksport** — last ned måneder som JSON eller tekstfil, eller sett en eksportmappe for automatisk lagring
+- **Import** — gjenopprett registreringer fra en tidligere eksportert JSON-fil
+- **Auto-backup** — skriver daglig backup til eksportmappen ved oppstart
+- **Temaer** — lys, mørk og systemtema
+
+## Teknologi
+
+| Lag | Teknologi |
+|-----|-----------|
+| Desktop-ramme | [Tauri 2](https://tauri.app) |
+| Frontend | [Next.js 16](https://nextjs.org) (App Router, statisk eksport) |
+| Språk | TypeScript |
+| UI-komponenter | [shadcn/ui](https://ui.shadcn.com) (base-ui) |
+| Tilstandshandtering | [Zustand 5](https://zustand-demo.pmnd.rs) |
+| Skjemaer | [react-hook-form](https://react-hook-form.com) + [Zod](https://zod.dev) |
+| Datobehandling | [date-fns 4](https://date-fns.org) |
+| Persistens | [tauri-plugin-store](https://github.com/tauri-apps/plugins-workspace) |
+
+## Kom i gang
+
+### Forutsetninger
+
+- [Node.js](https://nodejs.org) 18+
+- [pnpm](https://pnpm.io)
+- [Rust](https://rustup.rs) (stabil)
+- Tauri-avhengigheter for ditt OS — se [Tauri-guiden](https://tauri.app/start/prerequisites/)
+
+### Installer avhengigheter
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Kjør i utviklingsmodus
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Starter Next.js-dev-server og Tauri-vinduet samtidig:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm tauri dev
+```
 
-## Learn More
+### Bygg for produksjon
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm tauri build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Ferdig binærfil ligger i `src-tauri/target/release/`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Datalagring
 
-## Deploy on Vercel
+Data lagres lokalt via `tauri-plugin-store` i OS-appdata-mappen:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| OS | Bane |
+|----|------|
+| Linux | `~/.local/share/com.timerapportering.app/timerapportering.json` |
+| macOS | `~/Library/Application Support/com.timerapportering.app/timerapportering.json` |
+| Windows | `%APPDATA%\Timerapportering\timerapportering.json` |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Data overlever app-oppdateringer. For å sikre data mot tap ved avinstallering anbefales det å sette en eksportmappe i innstillinger — appen tar da daglig backup automatisk.
+
+## Bidra
+
+Se [CONTRIBUTING.md](CONTRIBUTING.md) for retningslinjer.
+
+## Lisens
+
+[MIT](LICENSE)
