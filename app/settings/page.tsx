@@ -1,4 +1,5 @@
 import { SettingsForm } from "@/components/settings/settings-form";
+import { DataSection } from "@/components/settings/data-section";
 
 export default function SettingsPage() {
   return (
@@ -12,6 +13,11 @@ export default function SettingsPage() {
 
       <div className="rounded-lg border border-border/50 bg-card p-6">
         <SettingsForm />
+      </div>
+
+      <div className="rounded-lg border border-border/50 bg-card p-6 space-y-1">
+        <h2 className="text-sm font-semibold mb-4">Data</h2>
+        <DataSection />
       </div>
     </div>
   );

@@ -4,8 +4,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { format } from "date-fns";
+import { nb } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +17,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,11 +50,13 @@ import { Input } from "@/components/ui/input";
 import { TimeInput } from "@/components/ui/time-input";
 import { TimeEntry } from "@/types";
 import { useTimeStore } from "@/hooks/use-time-store";
-import { calcDurationMinutes, formatMinutes, formatDate } from "@/lib/time-utils";
+import { calcDurationMinutes, formatMinutes, formatDate, today } from "@/lib/time-utils";
+import { cn } from "@/lib/utils";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 const editSchema = z
   .object({
+    date: z.date({ required_error: "Velg dato" }),
     startTime: z.string().min(1, "Påkrevd"),
     endTime: z.string().min(1, "Påkrevd"),
     note: z.string().optional(),
@@ -70,6 +81,10 @@ export function MonthEntryRow({ entry }: Props) {
   const form = useForm<EditValues>({
     resolver: zodResolver(editSchema),
     values: {
+      date: (() => {
+        const [y, m, d] = entry.date.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      })(),
       startTime: entry.startTime,
       endTime: entry.endTime,
       note: entry.note,
@@ -77,8 +92,11 @@ export function MonthEntryRow({ entry }: Props) {
   });
 
   const onEdit = async (values: EditValues) => {
+    const d = values.date;
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const durationMinutes = calcDurationMinutes(values.startTime, values.endTime);
     await updateEntry(entry.id, {
+      date: dateStr,
       startTime: values.startTime,
       endTime: values.endTime,
       durationMinutes,
@@ -149,6 +167,37 @@ export function MonthEntryRow({ entry }: Props) {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onEdit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Dato</FormLabel>
+                    <Popover>
+                      <PopoverTrigger
+                        className={cn(
+                          "inline-flex w-full items-center justify-start gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        )}
+                      >
+                        <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {field.value ? format(field.value, "PPP", { locale: nb }) : "Velg dato"}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date > new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}

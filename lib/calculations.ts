@@ -4,6 +4,10 @@ import {
   getISOWeek,
   parseISO,
   isWithinInterval,
+  subWeeks,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
 } from "date-fns";
 import { TimeEntry, Settings } from "@/types";
 import { yearMonthFromDate, timeToMinutes } from "./time-utils";
@@ -190,4 +194,93 @@ export function getWeekMinutes(
       isWithinInterval(parseISO(e.date), { start: weekStart, end: weekEnd })
     )
     .reduce((sum, e) => sum + e.durationMinutes, 0);
+}
+
+export interface WeeklyStat {
+  weekNumber: number;
+  weekStart: string; // YYYY-MM-DD
+  weekEnd: string;
+  totalMinutes: number;
+}
+
+/** Last N weeks of data (most recent last) */
+export function getWeeklyStats(entries: TimeEntry[], weeks = 12): WeeklyStat[] {
+  const now = new Date();
+  const result: WeeklyStat[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const ref = subWeeks(now, i);
+    const weekStart = startOfISOWeek(ref);
+    const weekEnd = endOfISOWeek(ref);
+    const totalMinutes = entries
+      .filter((e) =>
+        isWithinInterval(parseISO(e.date), { start: weekStart, end: weekEnd })
+      )
+      .reduce((sum, e) => sum + e.durationMinutes, 0);
+    result.push({
+      weekNumber: getISOWeek(weekStart),
+      weekStart: dateToString(weekStart),
+      weekEnd: dateToString(weekEnd),
+      totalMinutes,
+    });
+  }
+  return result;
+}
+
+export interface DayOfWeekStat {
+  day: number; // 0=Sun...6=Sat
+  label: string;
+  avgMinutes: number;
+  totalMinutes: number;
+  count: number;
+}
+
+/** Average minutes per day of week across all entries */
+export function getDayOfWeekStats(entries: TimeEntry[]): DayOfWeekStat[] {
+  const labels = ["Søn", "Man", "Tir", "Ons", "Tor", "Fre", "Lør"];
+  const totals = new Array(7).fill(0);
+  const counts = new Array(7).fill(0);
+  const days = new Set<string>(); // unique dates worked per weekday
+  const dayBuckets: Set<string>[] = Array.from({ length: 7 }, () => new Set());
+
+  for (const e of entries) {
+    const [y, m, d] = e.date.split("-").map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    totals[dow] += e.durationMinutes;
+    counts[dow]++;
+    dayBuckets[dow].add(e.date);
+  }
+
+  // Reorder Mon–Sun (1..6,0)
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  return order.map((dow) => ({
+    day: dow,
+    label: labels[dow],
+    totalMinutes: totals[dow],
+    count: counts[dow],
+    avgMinutes: dayBuckets[dow].size > 0 ? totals[dow] / dayBuckets[dow].size : 0,
+  }));
+}
+
+export interface MonthlyStat {
+  yearMonth: string;
+  label: string;
+  totalMinutes: number;
+}
+
+/** Last N calendar months of data (most recent last) */
+export function getMonthlyStats(entries: TimeEntry[], months = 6): MonthlyStat[] {
+  const now = new Date();
+  const result: MonthlyStat[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const ref = subMonths(now, i);
+    const start = startOfMonth(ref);
+    const end = endOfMonth(ref);
+    const ym = dateToString(start).substring(0, 7);
+    const label = ref.toLocaleDateString("nb-NO", { month: "short" });
+    const totalMinutes = entries
+      .filter((e) => isWithinInterval(parseISO(e.date), { start, end }))
+      .reduce((sum, e) => sum + e.durationMinutes, 0);
+    result.push({ yearMonth: ym, label, totalMinutes });
+  }
+  return result;
 }

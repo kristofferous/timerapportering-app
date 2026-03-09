@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { WeekSummary } from "./calculations";
-import { formatMinutes, formatNOK, formatYearMonth, formatDate } from "./time-utils";
+import { formatMinutes, formatNOK, formatYearMonth, formatDate, calcDurationMinutes } from "./time-utils";
+import { TimeEntry } from "@/types";
 
 const isTauri = () =>
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -76,6 +77,78 @@ export function exportMonthAsText(
   }
 
   return lines.join("\n");
+}
+
+/** Write an automatic backup of all entries to the configured export path. Silent on errors. */
+export async function exportBackup(entries: TimeEntry[], exportPath: string): Promise<void> {
+  if (!exportPath || !isTauri()) return;
+
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const dateStr = new Date().toISOString().split("T")[0];
+    const path = `${exportPath}/backup-${dateStr}.json`;
+    const content = JSON.stringify(entries, null, 2);
+    await invoke("write_file", { path, content });
+  } catch (err) {
+    console.error("Auto-backup failed:", err);
+  }
+}
+
+/**
+ * Parse a JSON file (either month-export or backup format) and merge with existing entries.
+ * Skips duplicates by date+startTime+endTime.
+ */
+export function importFromJSON(
+  jsonString: string,
+  existingEntries: TimeEntry[]
+): { entries: TimeEntry[]; imported: number; skipped: number } {
+  const parsed = JSON.parse(jsonString);
+
+  let candidates: Partial<TimeEntry>[] = [];
+
+  if (Array.isArray(parsed)) {
+    // Backup format: raw array of TimeEntry objects
+    candidates = parsed;
+  } else if (parsed.weeks && Array.isArray(parsed.weeks)) {
+    // Month export format
+    for (const week of parsed.weeks) {
+      if (week.entries && Array.isArray(week.entries)) {
+        candidates.push(...week.entries);
+      }
+    }
+  } else {
+    throw new Error("Ukjent filformat — forventet backup-array eller måneds-eksport");
+  }
+
+  const existingKeys = new Set(
+    existingEntries.map((e) => `${e.date}|${e.startTime}|${e.endTime}`)
+  );
+
+  let imported = 0;
+  let skipped = 0;
+  const newEntries: TimeEntry[] = [...existingEntries];
+
+  for (const c of candidates) {
+    if (!c.date || !c.startTime || !c.endTime) { skipped++; continue; }
+    const key = `${c.date}|${c.startTime}|${c.endTime}`;
+    if (existingKeys.has(key)) { skipped++; continue; }
+    const durationMinutes = c.durationMinutes ?? calcDurationMinutes(c.startTime, c.endTime);
+    if (durationMinutes <= 0) { skipped++; continue; }
+    newEntries.push({
+      id: crypto.randomUUID(),
+      date: c.date,
+      startTime: c.startTime,
+      endTime: c.endTime,
+      durationMinutes,
+      note: c.note ?? "",
+      isManual: true,
+      createdAt: new Date().toISOString(),
+    });
+    existingKeys.add(key);
+    imported++;
+  }
+
+  return { entries: newEntries, imported, skipped };
 }
 
 function blobDownload(content: string, filename: string, mimeType: string) {

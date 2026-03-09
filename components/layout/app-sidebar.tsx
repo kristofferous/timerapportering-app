@@ -6,6 +6,7 @@ import {
   Clock,
   CalendarDays,
   BarChart3,
+  LineChart,
   Settings,
   Timer,
   Sun,
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: Clock },
   { href: "/backlog", label: "Legg til tid", icon: CalendarDays },
   { href: "/months", label: "Måneder", icon: BarChart3 },
+  { href: "/statistics", label: "Statistikk", icon: LineChart },
   { href: "/settings", label: "Innstillinger", icon: Settings },
 ];
 
