@@ -1,4 +1,4 @@
-import { TimeEntry, ActiveSession, Settings } from "@/types";
+import { TimeEntry, ActiveSession, Settings, DEFAULT_SUPPLEMENTS } from "@/types";
 
 const STORE_PATH = "timerapportering.json";
 
@@ -38,6 +38,7 @@ export async function getSettings(): Promise<Settings> {
     maxHoursPerWeek: saved?.maxHoursPerWeek ?? 37.5,
     theme: saved?.theme ?? "system",
     exportPath: saved?.exportPath ?? "",
+    supplements: saved?.supplements ?? DEFAULT_SUPPLEMENTS,
   };
 }
 

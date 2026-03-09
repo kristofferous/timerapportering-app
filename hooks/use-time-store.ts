@@ -29,6 +29,7 @@ export const useTimeStore = create<TimeStore>((set, get) => ({
     maxHoursPerWeek: 37.5,
     theme: "system" as const,
     exportPath: "",
+    supplements: [],
   },
   isLoaded: false,
 

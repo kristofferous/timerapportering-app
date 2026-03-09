@@ -12,59 +12,53 @@ interface Props {
 }
 
 export function MonthCard({ summary, hourlyRate, onClick }: Props) {
+  const hasSupplements = summary.supplementNOK > 0;
+
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-lg border border-border/50 bg-card p-5 hover:bg-accent/30 hover:border-border transition-all duration-200 group"
+      className="w-full text-left rounded-md border border-border/40 bg-card px-4 py-3 hover:bg-accent/20 hover:border-border/70 transition-all duration-150 group"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-sm font-semibold capitalize tracking-tight">
-              {formatYearMonth(summary.yearMonth)}
-            </h3>
-            {summary.hasOverLimitWeek && (
-              <Badge variant="destructive" className="text-[10px] h-4 px-1.5 gap-1">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                Uke over grense
-              </Badge>
-            )}
-          </div>
-
-          <div className="flex items-baseline gap-5">
-            <div>
-              <p className="font-mono text-xl font-bold tabular-nums leading-none">
-                {formatMinutes(summary.totalMinutes)}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1 tracking-wide uppercase">
-                Total tid
-              </p>
-            </div>
-
-            {hourlyRate > 0 && (
-              <div>
-                <p className="font-mono text-xl font-bold tabular-nums leading-none text-emerald-400">
-                  {formatNOK(summary.payNOK)}
-                  <span className="text-sm font-medium text-emerald-400/70 ml-1">kr</span>
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1 tracking-wide uppercase">
-                  Estimert lønn
-                </p>
-              </div>
-            )}
-
-            <div>
-              <p className="font-mono text-xl font-bold tabular-nums leading-none">
-                {summary.entryCount}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1 tracking-wide uppercase">
-                {summary.entryCount === 1 ? "økt" : "økter"}
-              </p>
-            </div>
-          </div>
+      <div className="flex items-center gap-3">
+        {/* Month name */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-sm font-medium capitalize truncate">
+            {formatYearMonth(summary.yearMonth)}
+          </span>
+          {summary.hasOverLimitWeek && (
+            <Badge variant="destructive" className="text-[10px] h-4 px-1.5 gap-1 shrink-0">
+              <AlertTriangle className="h-2.5 w-2.5" />
+              Over grense
+            </Badge>
+          )}
         </div>
 
-        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground shrink-0 mt-1 transition-colors" />
+        {/* Stats */}
+        <div className="flex items-center gap-5 shrink-0">
+          <span className="font-mono text-sm tabular-nums text-muted-foreground">
+            {formatMinutes(summary.totalMinutes)}
+          </span>
+
+          {hourlyRate > 0 && (
+            <div className="text-right">
+              <span className="font-mono text-sm font-semibold tabular-nums text-emerald-400">
+                {formatNOK(summary.payNOK)}
+                <span className="text-xs font-normal text-emerald-400/60 ml-0.5">kr</span>
+              </span>
+              {hasSupplements && (
+                <div className="text-[10px] text-muted-foreground tabular-nums text-right leading-none mt-0.5">
+                  +{formatNOK(summary.supplementNOK)} tillegg
+                </div>
+              )}
+            </div>
+          )}
+
+          <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">
+            {summary.entryCount}
+          </span>
+        </div>
+
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0 transition-colors" />
       </div>
     </button>
   );
