@@ -14,8 +14,13 @@ jobs:
         include:
           - platform: ubuntu-22.04
             artifact-name: linux
+            rust-targets: ""
           - platform: windows-latest
             artifact-name: windows
+            rust-targets: ""
+          - platform: macos-latest
+            artifact-name: macos
+            rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
 
@@ -34,6 +39,8 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -50,9 +57,21 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri app
+        if: matrix.platform != 'macos-latest'
         run: pnpm tauri build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
+
+      - name: Build Tauri app (macOS universal)
+        if: matrix.platform == 'macos-latest'
+        run: pnpm tauri build --target universal-apple-darwin
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload Linux artifacts
         if: matrix.platform == 'ubuntu-22.04'
@@ -72,6 +91,15 @@ jobs:
           path: |
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
+
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-bundles
+          path: |
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: warn
 
   release:
